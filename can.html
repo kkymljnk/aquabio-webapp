@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AquaBio Admin – Quản trị</title>
+  <link rel="stylesheet" href="can.css">
+  <meta name="robots" content="noindex, nofollow">
+  <!-- QR Code generator (offline, không cần internet) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🌊</div>
+    <h1>AquaBio Admin</h1>
+    <p>Đăng nhập vào bảng quản trị</p>
+    <input type="password" id="admin-pass" placeholder="🔐 Nhập mật khẩu quản trị">
+    <button class="btn-login" onclick="login()">Đăng nhập →</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN APP ===== -->
+<div id="admin-app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🌊</span>
+      <div>
+        <div class="brand-name">AquaBio</div>
+        <div class="brand-sub">Quản trị hệ thống</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Tổng quan</div>
+      <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </button>
+
+      <div class="nav-group-label">Nội dung</div>
+      <button class="nav-item" data-page="products" onclick="navigate('products')">
+        <span class="icon">🛍️</span> Sản phẩm
+      </button>
+      <button class="nav-item" data-page="content" onclick="navigate('content')">
+        <span class="icon">✏️</span> Nội dung trang
+      </button>
+      <button class="nav-item" data-page="blog" onclick="navigate('blog')">
+        <span class="icon">📝</span> Bài viết
+      </button>
+      <button class="nav-item" data-page="ai" onclick="navigate('ai')">
+        <span class="icon">🤖</span> AI Phân tích
+      </button>
+      <button class="nav-item" data-page="orders" onclick="navigate('orders')" style="position:relative">
+        <span class="icon">📦</span> Đơn hàng
+        <span class="orders-badge" id="nav-orders-badge" style="display:none"></span>
+      </button>
+
+      <div class="nav-group-label">Cài đặt</div>
+      <button class="nav-item" data-page="settings" onclick="navigate('settings')">
+        <span class="icon">⚙️</span> Cài đặt
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">🚪 Đăng xuất</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page-view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📊 Dashboard</div>
+          <div class="page-sub">Tổng quan hoạt động hệ thống AquaBio</div>
+        </div>
+        <a href="index.html" target="_blank" class="btn btn-outline">🌐 Xem trang chính</a>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-icon">🛍️</span>
+          <div><div class="val" id="stat-products">0</div><div class="lbl">Sản phẩm</div></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">📝</span>
+          <div><div class="val" id="stat-blogs">0</div><div class="lbl">Bài viết</div></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">📂</span>
+          <div><div class="val" id="stat-cats">0</div><div class="lbl">Danh mục</div></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">📦</span>
+          <div><div class="val" id="stat-orders">0</div><div class="lbl">Đơn chờ</div></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <div><div class="val" id="stat-revenue" style="font-size:1rem">0đ</div><div class="lbl">Tổng giá SP</div></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">⚡ Thao tác nhanh</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="navigate('products');openAddProduct()">➕ Thêm sản phẩm</button>
+          <button class="btn btn-outline" onclick="navigate('blog');openAddBlog()">✍️ Viết bài mới</button>
+          <button class="btn btn-outline" onclick="navigate('content')">✏️ Chỉnh nội dung</button>
+          <button class="btn btn-gold" onclick="navigate('ai')">🤖 AI Phân tích</button>
+        </div>
+      </div>
+
+      <!-- WIDGET CHART 7 NGÀY -->
+      <div class="section-card">
+        <div class="section-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          📈 Doanh thu 7 ngày gần nhất
+          <span style="font-size:0.75rem;color:var(--muted)">Cập nhật realtime mỗi 10s</span>
+        </div>
+        <canvas id="week-chart" width="620" height="160" style="width:100%;height:160px;display:block"></canvas>
+      </div>
+      <!-- WIDGET ĐƤN HÀNG MỚI NHẤT -->
+      <div class="section-card" id="recent-orders-widget">
+        <div class="section-card-title">
+          📦 Đơn hàng gần đây
+          <button class="btn btn-outline btn-sm" style="float:right;margin-top:-4px" onclick="navigate('orders')">Xem tất cả →</button>
+        </div>
+        <div id="dashboard-orders-list"><div style="color:var(--muted);font-size:0.85rem;padding:12px 0">Chưa có đơn hàng nào.</div></div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="page-orders" class="page-view" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📦 Quản lý đơn hàng</div>
+          <div class="page-sub">Theo dõi và xử lý đơn hàng khách đặt</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="form-control" id="order-filter" style="width:160px" onchange="renderOrdersTable()">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="pending">⏳ Chờ xác nhận</option>
+            <option value="confirmed">✅ Đã xác nhận</option>
+            <option value="shipped">🚚 Đang giao</option>
+            <option value="done">🏆 Hoàn thành</option>
+            <option value="cancelled">❌ Đã huỷ</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="renderOrdersTable()">🔄 Làm mới</button>
+          <button class="btn btn-danger btn-sm" onclick="clearAllOrders()">🗑️ Xóa tất cả</button>
+        </div>
+      </div>
+      <div class="section-card">
+        <div id="orders-table-wrap" style="overflow-x:auto">
+          <table class="admin-table">
+            <thead><tr>
+              <th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th>
+              <th>Tổng tiền</th><th>Thanh toán</th><th>Trạng thái</th><th>Thời gian</th><th>Thao tác</th>
+            </tr></thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <div id="page-products" class="page-view" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🛍️ Quản lý sản phẩm</div>
+          <div class="page-sub">Thêm, sửa, xoá sản phẩm – đồng bộ trang chính</div>
+        </div>
+        <button class="btn btn-primary" onclick="openAddProduct()">➕ Thêm sản phẩm</button>
+      </div>
+
+      <div class="section-card">
+        <div class="admin-search">
+          <input type="text" placeholder="🔍 Tìm sản phẩm..." oninput="renderProductsTable(this.value)">
+          <select class="form-control" style="width:160px" onchange="renderProductsTable(document.querySelector('.admin-search input').value)">
+            <option>Tất cả danh mục</option>
+            <option value="aqua">Thủy sản</option>
+            <option value="health">Thiên Mộc</option>
+            <option value="food">Thực phẩm</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Hình</th>
+                <th>Tên sản phẩm</th>
+                <th>Danh mục</th>
+                <th>Giá</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT EDITOR -->
+    <div id="page-content" class="page-view" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">✏️ Nội dung trang chính</div>
+          <div class="page-sub">Chỉnh sửa tiêu đề, mô tả, văn bản trên toàn bộ website</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="resetContent()">↺ Mặc định</button>
+          <button class="btn btn-primary" onclick="saveAllContent()">💾 Lưu tất cả</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">📄 Chỉnh sửa văn bản</div>
+        <div id="content-fields"></div>
+      </div>
+
+      <div class="section-card" style="background:rgba(232,196,106,0.06);border-color:rgba(232,196,106,0.2)">
+        <div class="section-card-title">💡 Hướng dẫn</div>
+        <ul style="color:var(--muted);font-size:0.85rem;line-height:2;padding-left:20px">
+          <li>Nhấn <strong style="color:var(--text)">Lưu tất cả</strong> sau khi chỉnh sửa</li>
+          <li>Reload <strong style="color:var(--text)">index.html</strong> để xem thay đổi trên trang chính</li>
+          <li>Để trống → hệ thống dùng nội dung mặc định</li>
+          <li>Nhấn <strong style="color:var(--text)">Mặc định</strong> để khôi phục toàn bộ</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BLOG -->
+    <div id="page-blog" class="page-view" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📝 Quản lý bài viết</div>
+          <div class="page-sub">Soạn thảo bài viết với trình biên tập Markdown</div>
+        </div>
+        <button class="btn btn-primary" onclick="openAddBlog()">✍️ Thêm bài viết</button>
+      </div>
+
+      <div class="section-card">
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Danh mục</th>
+                <th>Ngày tạo</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="blogs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI STANDALONE -->
+    <div id="page-ai" class="page-view" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🤖 AI Phân tích nội dung</div>
+          <div class="page-sub">Nhập văn bản để AI phân tích, chấm điểm và gợi ý cải thiện</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">📋 Nhập nội dung phân tích</div>
+        <div class="form-group">
+          <label>Tiêu đề bài viết / tên sản phẩm</label>
+          <input type="text" class="form-control" id="ai-input-title" placeholder="VD: Tinh chất đạm cá biển AquaBio">
+        </div>
+        <div class="form-group">
+          <label>Nội dung cần phân tích</label>
+          <textarea class="form-control" id="ai-input-body" rows="8" placeholder="Dán nội dung mô tả sản phẩm hoặc bài viết vào đây..."></textarea>
+        </div>
+        <button class="btn btn-gold" onclick="runAIStandalone()">🤖 Phân tích ngay</button>
+      </div>
+
+      <div class="section-card" id="ai-standalone-result" style="display:none">
+        <div class="section-card-title">📊 Kết quả phân tích AI</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-start">
+          <div style="text-align:center">
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">Điểm chất lượng</div>
+            <div class="ai-score" id="ai-standalone-score">-/10</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">Từ khóa phát hiện</div>
+            <div id="ai-standalone-keywords"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>📝 Tóm tắt tự động</label>
+          <div class="ai-output" id="ai-standalone-summary"></div>
+        </div>
+        <div class="form-group">
+          <label>💡 Gợi ý cải thiện</label>
+          <ul style="color:var(--text);font-size:0.88rem;line-height:2;padding-left:20px" id="ai-standalone-suggestions"></ul>
+        </div>
+        <div class="form-group">
+          <label>✨ Đề xuất rewrite tóm tắt</label>
+          <textarea class="form-control" id="ai-standalone-rewrite" rows="4"></textarea>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="document.getElementById('ai-standalone-rewrite').select();document.execCommand('copy');adminToast('Đã sao chép!')">📋 Sao chép</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page-view" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">⚙️ Cài đặt hệ thống</div>
+          <div class="page-sub">Cấu hình admin và bảo mật</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">🏦 Cấu hình tài khoản VietQR</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Ngân hàng</label>
+            <select class="form-control" id="set-bank-id">
+              <optgroup label="🏆 Ngân hàng phổ biến">
+                <option value="VCB">Vietcombank (VCB)</option>
+                <option value="TCB">Techcombank (TCB)</option>
+                <option value="MB">MB Bank</option>
+                <option value="BIDV">BIDV</option>
+                <option value="AGRIBANK">Agribank</option>
+                <option value="ICB">VietinBank (CTG)</option>
+              </optgroup>
+              <optgroup label="💳 Ngân hàng thương mại">
+                <option value="ACB">ACB</option>
+                <option value="VPB">VPBank</option>
+                <option value="TPB">TPBank</option>
+                <option value="STB">Sacombank</option>
+                <option value="SHB">SHB</option>
+                <option value="HDB">HDBank</option>
+                <option value="VIB">VIB</option>
+                <option value="OCB">OCB</option>
+                <option value="MSB">MSB (Maritime)</option>
+                <option value="SEAB">SeABank</option>
+                <option value="EIB">Eximbank</option>
+                <option value="LPB">LienVietPostBank</option>
+                <option value="NAB">Nam A Bank</option>
+                <option value="BAB">BacABank</option>
+                <option value="NCB">NCB</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Số tài khoản</label>
+            <input type="text" class="form-control" id="set-bank-acct" placeholder="VD: 1234567890">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tên chủ tài khoản (IN HOA, không dấu)</label>
+          <input type="text" class="form-control" id="set-bank-name" placeholder="VD: AQUABIO VIET NAM">
+        </div>
+        <button class="btn btn-primary" onclick="saveBankConfig()">💾 Lưu tài khoản ngân hàng</button>
+        <div id="bank-preview" style="margin-top:16px;display:none">
+          <p style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">📲 Preview mã QR:</p>
+          <img id="bank-qr-preview" style="width:160px;border-radius:10px;border:2px solid var(--border)" alt="VietQR preview">
+        </div>
+      </div>
+
+      <!-- 2FA LOCK SECTION – PIN 6 Số -->
+      <div class="section-card" id="twofa-lock-card" style="border:2px solid var(--primary);background:rgba(76,187,133,0.05)">
+        <div class="section-card-title" style="color:var(--primary)">🔐 Bảo mật tài khoản</div>
+        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:16px">
+          Đặt mã PIN 6 chữ số để bảo vệ cài đặt quản trị.<br>
+          Khi PIN bật, cần nhập đúng PIN mới mở khóa được trang cài đặt.
+        </p>
+        <div id="twofa-status-display"></div>
+
+        <div id="twofa-verify-wrap" style="display:none;margin-top:14px">
+          <div class="form-group" style="max-width:300px">
+            <label id="twofa-input-label" style="font-weight:600;margin-bottom:6px;display:block">Nhập mã PIN 6 chữ số:</label>
+            <input type="password" inputmode="numeric" class="form-control" id="twofa-code-input"
+              placeholder="● ● ● ● ● ●" maxlength="20"
+              style="font-size:1.5rem;letter-spacing:6px;text-align:center;font-family:monospace"
+              oninput="this.value=this.value.replace(/[^0-9a-zA-Z\-_]/g,'')">
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:6px">
+              💡 Nếu quên PIN: nhập <strong>mật khẩu quản trị</strong> vào ô trên để bypass
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center">
+          <button class="btn btn-primary" id="twofa-toggle-btn" onclick="toggleTwoFA()">🔒 Bật khóa PIN 6 số</button>
+          <button class="btn btn-gold" id="twofa-unlock-btn" onclick="unlockWith2FA()" style="display:none">🔓 Mở khóa bằng PIN</button>
+          <span id="twofa-session-badge" style="display:none;align-items:center;gap:6px;font-size:0.82rem;color:var(--primary);padding:4px 12px;background:rgba(76,187,133,0.12);border-radius:20px">
+            ✅ Đã xác thực – phiên làm việc an toàn
+          </span>
+          <button class="btn btn-danger btn-sm" style="margin-left:auto;opacity:0.65;font-size:0.75rem"
+            onclick="if(confirm('⚠️ Reset PIN? Bạn cần đặt lại PIN từ đầu.')){reset2FA();adminToast('Đã reset PIN!');}">
+            🗑️ Reset PIN
+          </button>
+        </div>
+      </div>
+
+
+      <div id="settings-locked-msg" style="display:none;padding:16px;background:rgba(244,162,97,0.1);border:1px solid rgba(244,162,97,0.4);border-radius:12px;color:var(--text-muted);font-size:0.88rem;margin-bottom:16px">
+        🔐 Cài đặt này đang được bảo vệ bằng khóa PIN. Vui lòng mở khóa bằng PIN ở trên trước.
+      </div>
+
+
+      <div id="settings-unlocked-content">
+        <div class="section-card">
+          <div class="section-card-title">🏆 Gợi ý tính năng nâng cao</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+            <div style="padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:12px">
+              <div style="font-size:1.5rem;margin-bottom:6px">📊</div>
+              <div style="font-weight:600;font-size:0.88rem">Báo cáo doanh thu</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Xuất báo cáo đơn hàng theo ngày/tuần/tháng (sắp ra)</div>
+            </div>
+            <div style="padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:12px">
+              <div style="font-size:1.5rem;margin-bottom:6px">📧</div>
+              <div style="font-weight:600;font-size:0.88rem">Email khách hàng</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Gửi email xác nhận đơn hàng tự động (sắp ra)</div>
+            </div>
+            <div style="padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:12px">
+              <div style="font-size:1.5rem;margin-bottom:6px">📍</div>
+              <div style="font-weight:600;font-size:0.88rem">Theo dõi giao hàng</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Tích hợp API GHTK / GHN / VNPT (sắp ra)</div>
+            </div>
+            <div style="padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:12px">
+              <div style="font-size:1.5rem;margin-bottom:6px">📱</div>
+              <div style="font-weight:600;font-size:0.88rem">Push Notification</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Nhận thông báo đơn hàng qua Zalo OA / Telegram (sắp ra)</div>
+            </div>
+            <div style="padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:12px">
+              <div style="font-size:1.5rem;margin-bottom:6px">🎁</div>
+              <div style="font-weight:600;font-size:0.88rem">Mã giảm giá</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Tạo và quản lý mã voucher (sắp ra)</div>
+            </div>
+            <div style="padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:12px">
+              <div style="font-size:1.5rem;margin-bottom:6px">🤖</div>
+              <div style="font-weight:600;font-size:0.88rem">AI Chatbot nâng cao</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Kết nối GPT API tư vấn tự động cho khách (sắp ra)</div>
+            </div>
+          </div>
+        </div>
+
+      <div class="section-card">
+        <div class="section-card-title">🏦 Cấu hình tài khoản VietQR</div>
+        <div class="form-group">
+          <label>Mật khẩu hiện tại</label>
+          <input type="password" class="form-control" id="set-old-pass" placeholder="Nhập mật khẩu hiện tại">
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu mới</label>
+          <input type="password" class="form-control" id="set-new-pass" placeholder="Tối thiểu 8 ký tự">
+        </div>
+        <button class="btn btn-primary" onclick="changeAdminPass()">🔒 Đổi mật khẩu</button>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">🗄️ Dữ liệu & Backup</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="exportData()">⬇️ Xuất dữ liệu JSON</button>
+          <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">⬆️ Nhập dữ liệu</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+          <button class="btn btn-danger" onclick="clearAllData()">🗑️ Xoá toàn bộ dữ liệu</button>
+        </div>
+        <p style="color:var(--muted);font-size:0.8rem;margin-top:12px">⚠️ Dữ liệu lưu trong trình duyệt (localStorage). Hãy xuất backup thường xuyên.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== PRODUCT MODAL ===== -->
+<div class="modal-overlay" id="product-modal" onclick="if(event.target===this)closeModal('product-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="product-modal-title">Sản phẩm</div>
+      <button class="btn-close-modal" onclick="closeModal('product-modal')">✕</button>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(this,'ptab-basic')">📋 Cơ bản</button>
+      <button class="tab-btn" onclick="switchTab(this,'ptab-detail')">📄 Chi tiết</button>
+      <button class="tab-btn" onclick="switchTab(this,'ptab-image')">🖼️ Hình ảnh</button>
+    </div>
+
+    <!-- Tab cơ bản -->
+    <div id="ptab-basic" class="tab-panel active">
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Emoji icon</label>
+          <input class="form-control" id="pf-emoji" placeholder="🐟" style="font-size:1.5rem;text-align:center">
+        </div>
+        <div class="form-group">
+          <label>Danh mục</label>
+          <select class="form-control" id="pf-category">
+            <option value="aqua">🌊 Thủy sản</option>
+            <option value="health">🌿 Thiên Mộc</option>
+            <option value="food">🍶 Thực phẩm</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tên sản phẩm *</label>
+        <input class="form-control" id="pf-name" placeholder="Tên sản phẩm đầy đủ">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Giá bán (VNĐ) *</label>
+          <input class="form-control" id="pf-price" type="number" placeholder="320000">
+        </div>
+        <div class="form-group">
+          <label>Đơn vị</label>
+          <select class="form-control" id="pf-unit">
+            <option value="/hộp">/hộp</option>
+            <option value="/lít">/lít</option>
+            <option value="/chai">/chai</option>
+            <option value="/kg">/kg</option>
+            <option value="/gói">/gói</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Mô tả ngắn</label>
+        <textarea class="form-control" id="pf-short" rows="2" placeholder="1-2 câu mô tả sản phẩm"></textarea>
+      </div>
+    </div>
+
+    <!-- Tab chi tiết -->
+    <div id="ptab-detail" class="tab-panel">
+      <div class="form-group">
+        <label>Mô tả đầy đủ</label>
+        <textarea class="form-control" id="pf-full" rows="5" placeholder="Mô tả chi tiết sản phẩm, thành phần, công dụng..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Thành phần (cách nhau bởi dấu phẩy)</label>
+        <input class="form-control" id="pf-ingredients" placeholder="Cá biển tươi, Enzyme thủy phân, Khoáng chất">
+      </div>
+      <div class="form-group">
+        <label>Hướng dẫn sử dụng</label>
+        <textarea class="form-control" id="pf-usage" rows="3" placeholder="Cách dùng, liều lượng, tần suất..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Thông số kỹ thuật</label>
+        <input class="form-control" id="pf-specs" placeholder="Protein: 45-55% | pH: 5.5-6.5">
+      </div>
+      <div class="form-group">
+        <label>Đối tượng sử dụng</label>
+        <input class="form-control" id="pf-target" placeholder="Cây trồng, gia súc, thủy sản...">
+      </div>
+    </div>
+
+    <!-- Tab hình ảnh -->
+    <div id="ptab-image" class="tab-panel">
+      <div class="form-group">
+        <label>Upload ảnh sản phẩm</label>
+        <div class="img-upload-area">
+          <input type="file" accept="image/*" onchange="handleImageUpload(this)">
+          <div style="pointer-events:none">
+            <div style="font-size:2.5rem;margin-bottom:8px">📁</div>
+            <div id="img-upload-label" style="font-size:0.88rem;color:var(--muted)">Nhấn để tải ảnh sản phẩm (JPG/PNG/WebP)</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Tối đa 5MB · Ảnh sẽ hiển thị thay cho emoji</div>
+          </div>
+        </div>
+        <img id="img-preview" class="img-preview" alt="preview">
+      </div>
+      <div class="form-group">
+        <label>Hoặc dùng Emoji icon</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px" title="Chọn">🐟</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🦈</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🍶</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">💊</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🌿</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🫁</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🦴</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🌺</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🧴</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🧪</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🌾</span>
+          <span onclick="document.getElementById('pf-emoji').value=this.textContent" style="font-size:1.8rem;cursor:pointer;padding:4px">🥩</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn btn-outline" onclick="closeModal('product-modal')">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 Lưu sản phẩm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BLOG MODAL ===== -->
+<div class="modal-overlay" id="blog-modal" onclick="if(event.target===this)closeModal('blog-modal')">
+  <div class="modal-box" style="max-width:780px">
+    <div class="modal-header">
+      <div class="modal-title" id="blog-modal-title">Bài viết</div>
+      <button class="btn-close-modal" onclick="closeModal('blog-modal')">✕</button>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label>Tiêu đề bài viết *</label>
+        <input class="form-control" id="bf-title" placeholder="Tiêu đề hấp dẫn, rõ ràng...">
+      </div>
+      <div class="form-group">
+        <label>Danh mục</label>
+        <select class="form-control" id="bf-category">
+          <option value="aqua">🌊 Thủy sản</option>
+          <option value="health">🌿 Sức khỏe</option>
+          <option value="food">🍶 Thực phẩm</option>
+          <option value="tip">💡 Mẹo hay</option>
+          <option value="news">📰 Tin tức</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Tóm tắt bài viết (hiển thị trước preview)</label>
+      <textarea class="form-control" id="bf-summary" rows="2" placeholder="1-2 câu tóm tắt ngắn gọn, hấp dẫn người đọc..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Nội dung bài viết (hỗ trợ Markdown)</label>
+      <div class="editor-toolbar">
+        <button onclick="insertBlogFormat('h2')" title="Tiêu đề H2">H2</button>
+        <button onclick="insertBlogFormat('h3')" title="Tiêu đề H3">H3</button>
+        <button onclick="insertBlogFormat('bold')" title="In đậm"><b>B</b></button>
+        <button onclick="insertBlogFormat('italic')" title="In nghiêng"><i>I</i></button>
+        <button onclick="insertBlogFormat('list')" title="Danh sách">• List</button>
+        <button onclick="insertBlogFormat('quote')" title="Trích dẫn">"Quote"</button>
+        <button onclick="insertBlogFormat('code')" title="Code">`Code`</button>
+        <button onclick="insertBlogFormat('hr')" title="Đường ngang">—</button>
+        <button onclick="insertBlogFormat('link')" title="Liên kết">🔗</button>
+      </div>
+      <textarea class="editor-area" id="bf-body" placeholder="## Giới thiệu&#10;&#10;Viết nội dung bài viết tại đây...&#10;&#10;## Nội dung chính&#10;&#10;- Điểm 1&#10;- Điểm 2&#10;&#10;## Kết luận"></textarea>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px">
+      <button class="btn btn-gold btn-sm" onclick="quickAIBlog()">🤖 AI gợi ý tóm tắt</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="closeModal('blog-modal')">Huỷ</button>
+        <button class="btn btn-primary" onclick="saveBlog()">💾 Lưu bài viết</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AI MODAL (từ blogs table) ===== -->
+<div class="modal-overlay" id="ai-modal" onclick="if(event.target===this)closeModal('ai-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">🤖 AI Phân tích: <span id="ai-target-title" style="color:var(--primary)"></span></div>
+      <button class="btn-close-modal" onclick="closeModal('ai-modal')">✕</button>
+    </div>
+
+    <div id="ai-loading" style="text-align:center;padding:40px">
+      <div style="font-size:2.5rem;animation:spin 1s linear infinite;display:inline-block">⚙️</div>
+      <div style="color:var(--muted);margin-top:12px">AI đang phân tích nội dung...</div>
+    </div>
+
+    <div id="ai-result" style="display:none">
+      <div style="display:flex;gap:24px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">Điểm chất lượng</div>
+          <div class="ai-score" id="ai-score-val">-</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">Từ khóa phát hiện</div>
+          <div id="ai-keywords"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>📝 Tóm tắt tự động</label>
+        <div class="ai-output" id="ai-summary-text"></div>
+      </div>
+      <div class="form-group">
+        <label>💡 Gợi ý cải thiện</label>
+        <ul style="color:var(--text);font-size:0.88rem;line-height:2;padding-left:20px" id="ai-suggestions"></ul>
+      </div>
+      <div class="form-group">
+        <label>✨ Đề xuất rewrite tóm tắt</label>
+        <textarea class="form-control" id="ai-rewrite" rows="3"></textarea>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="applyAIRewrite()">📋 Sao chép & Áp dụng</button>
+      </div>
+      <!-- NỘI DUNG CẢI THIỆN MỚI -->
+      <div class="form-group" style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+        <label style="font-size:0.95rem;color:var(--primary)">🚀 Nội dung đã được AI cải thiện</label>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px">AI đã phân tích và viết lại nội dung chuyên nghiệp, chi tiết hơn, dễ hiểu cho khách hàng.</p>
+        <textarea class="form-control" id="ai-improved" rows="12" style="font-size:0.83rem;line-height:1.7;font-family:monospace"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="copyImprovedContent()">📋 Sao chép nội dung</button>
+          <button class="btn btn-gold btn-sm" onclick="applyImprovedToBlog()">✅ Áp dụng vào bài viết đang soạn</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="admin-toast" id="admin-toast"></div>
+
+<style>
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
+
+<script src="can.js"></script>
+<script>
+// Tab switcher
+function switchTab(btn, panelId) {
+  const modal = btn.closest('.modal-box, .section-card');
+  modal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  modal.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// Settings functions
+function changeAdminPass() {
+  // Kiểm tra PIN nếu đang bật
+  if (typeof _2faEnabled !== 'undefined' && _2faEnabled && !_2faUnlocked) {
+    adminToast('🔐 Cần mở khóa PIN trước khi đổi mật khẩu! Nhập PIN ở mục Bảo mật.', 'error');
+    // Cuộn lên phần PIN cho tiện
+    document.getElementById('twofa-lock-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  const oldP = document.getElementById('set-old-pass').value;
+  const newP = document.getElementById('set-new-pass').value;
+  if (oldP !== (localStorage.getItem('aquabio_custom_pass') || ADMIN_PASS)) {
+    adminToast('Mật khẩu hiện tại không đúng!', 'error'); return;
+  }
+  if (newP.length < 8) { adminToast('Mật khẩu mới cần ít nhất 8 ký tự!', 'error'); return; }
+  localStorage.setItem('aquabio_custom_pass', newP);
+  adminToast('✅ Đã đổi mật khẩu thành công!');
+}
+
+function exportData() {
+  const data = {
+    products: getProducts(),
+    blogs: getBlogs(),
+    content: getContent(),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `aquabio_backup_${Date.now()}.json`;
+  a.click();
+  adminToast('Đã xuất dữ liệu backup!');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.products) saveProducts(data.products);
+      if (data.blogs) saveBlogs(data.blogs);
+      if (data.content) saveContent(data.content);
+      adminToast('Đã nhập dữ liệu thành công! Tải lại trang...');
+      setTimeout(() => location.reload(), 1500);
+    } catch { adminToast('File JSON không hợp lệ!', 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('⚠️ Xoá TOÀN BỘ dữ liệu admin? Thao tác này không thể hoàn tác!')) return;
+  ['aquabio_admin_products','aquabio_blogs','aquabio_content','aquabio_products_v2'].forEach(k => localStorage.removeItem(k));
+  adminToast('Đã xoá toàn bộ dữ liệu. Tải lại...');
+  setTimeout(() => location.reload(), 1500);
+}
+
+// Quick AI for blog modal
+function quickAIBlog() {
+  const title = document.getElementById('bf-title').value;
+  const body  = document.getElementById('bf-body').value;
+  if (!body.trim()) { adminToast('Nhập nội dung trước khi dùng AI!', 'error'); return; }
+  const analysis = analyzeContent({ title, body, summary: '' });
+  document.getElementById('bf-summary').value = analysis.rewriteSummary;
+  adminToast('AI đã gợi ý tóm tắt! Xem ô Tóm tắt.');
+}
+
+// AI Standalone
+function runAIStandalone() {
+  const title = document.getElementById('ai-input-title').value;
+  const body  = document.getElementById('ai-input-body').value;
+  if (!body.trim()) { adminToast('Nhập nội dung để phân tích!', 'error'); return; }
+  const analysis = analyzeContent({ title, body, summary: '' });
+  document.getElementById('ai-standalone-result').style.display = 'block';
+  document.getElementById('ai-standalone-score').textContent = analysis.score + '/10';
+  document.getElementById('ai-standalone-keywords').innerHTML = analysis.keywords.map(k => `<span class="ai-tag">${k}</span>`).join('');
+  document.getElementById('ai-standalone-summary').textContent = analysis.summary;
+  document.getElementById('ai-standalone-suggestions').innerHTML = analysis.suggestions.map(s => `<li style="margin-bottom:6px">${s}</li>`).join('');
+  document.getElementById('ai-standalone-rewrite').value = analysis.rewriteSummary;
+}
+</script>
+</body>
+</html>

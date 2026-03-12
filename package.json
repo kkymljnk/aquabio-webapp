@@ -1,0 +1,11 @@
+{
+  "name": "aquabio-agri-webapp",
+  "version": "1.0.0",
+  "description": "AquaBio - WebApp Nông nghiệp & Thủy Sản",
+  "scripts": {
+    "dev": "npx serve . --listen 3000 --no-clipboard",
+    "start": "npx serve . --listen 3000"
+  },
+  "keywords": ["aquabio", "agriculture", "aquaculture"],
+  "author": "AquaBio Vietnam"
+}
